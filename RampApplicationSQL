@@ -1,0 +1,8 @@
+select sum(INN.Daily_TransAmt) / count(INN.transaction_time) as Rolling_Ave
+FROM (
+select cast(transaction_time as Date), 
+	   sum(transaction_amount) AS Daily_TransAmt from transactions 
+where 1 = 1
+and transaction_time >= '2021-01-29'
+group by cast(transaction_time as Date)
+) INN
