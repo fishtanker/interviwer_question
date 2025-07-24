@@ -1,8 +1,19 @@
-select sum(INN.Daily_TransAmt) / count(INN.transaction_time) as Rolling_Ave
-FROM (
-select cast(transaction_time as Date), 
-	   sum(transaction_amount) AS Daily_TransAmt from transactions 
+//First to create CTE to get the datetime to date, then do summation to get the total amount by date
+WITH CTE AS (
+select  CAST(transaction_time AS DATE) as transaction_date,
+	    sum(transaction_amount) as transaction_amount
+from transactions 
 where 1 = 1
-and transaction_time >= '2021-01-29'
-group by cast(transaction_time as Date)
-) INN
+group by transaction_date
+order by transaction_date
+)
+//Then we join the next two days back to the CTE table and then to calculate the avg 
+//Since the last day of the data is 1/31 and there is no 2/1 data. I used coalesce to convert null to 0. If we don't want those, we can simply add 
+//a where clause to remove it so the calculation stops at 1/31
+SELECT c1.transaction_date,
+	   sum(c1.transaction_amount + coalesce(c2.transaction_amount,0) + coalesce(c3.transaction_amount,0)) / 3 AS TotalAmount 
+from CTE c1
+LEFT JOIN CTE c2 on c1.transaction_date = (c2.transaction_date - 1)
+LEFT JOIN CTE c3 on c1.transaction_date = (c3.transaction_date - 2)
+WHERE c1.transaction_date >= '2021-01-29'
+group by c1.transaction_date
